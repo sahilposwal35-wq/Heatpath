@@ -1,7 +1,3 @@
-"""
-Pydantic request/response schemas for HeatPath API.
-All coordinates are validated against the pilot area bounding box.
-"""
 from __future__ import annotations
 
 from typing import Optional, Literal, Any
@@ -10,8 +6,6 @@ from datetime import datetime
 
 from app.config import settings
 
-
-# ── Request schemas ───────────────────────────────────────────────────────────
 
 class Coordinates(BaseModel):
     lat: float = Field(..., ge=-90, le=90, description="Latitude in decimal degrees")
@@ -66,9 +60,7 @@ class RouteRequest(BaseModel):
         ):
             raise ValueError("Origin and destination must be different locations.")
         return self
-
-
-# ── Response schemas ──────────────────────────────────────────────────────────
+# Response models
 
 class ScoreComponents(BaseModel):
     alpha_time: float = Field(..., description="Profile-weighted time component of route cost")
@@ -170,9 +162,7 @@ class RouteResponse(BaseModel):
         "Routing: Valhalla (MIT) | "
         "Weather: Open-Meteo.com (CC BY 4.0)"
     )
-
-
-# ── Health / status schemas ───────────────────────────────────────────────────
+# Status models
 
 class HealthResponse(BaseModel):
     status: str = "ok"

@@ -16,9 +16,7 @@ from typing import Optional
 from dataclasses import dataclass, field
 
 from app.config import settings
-
-
-# ── Encoded polyline decoder (precision 6, as used by Valhalla) ───────────────
+# Polyline decoding (precision 6)
 
 def decode_polyline6(encoded: str) -> list[tuple[float, float]]:
     """
@@ -72,9 +70,7 @@ def haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     dlam = math.radians(lon2 - lon1)
     a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2
     return 2 * R * math.asin(math.sqrt(a))
-
-
-# ── Route data structures ─────────────────────────────────────────────────────
+# Route models
 
 @dataclass
 class RouteSegment:
@@ -100,9 +96,7 @@ class CandidateRoute:
     segments: list[RouteSegment]
     # Source: "live" or "sample"
     source: str = "live"
-
-
-# ── Valhalla client ───────────────────────────────────────────────────────────
+# Routing client
 
 class ValhallaRoutingError(Exception):
     pass

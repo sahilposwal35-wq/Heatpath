@@ -104,7 +104,7 @@ def rank_routes(
             )
         )
 
-    # ── Pick recommendation ───────────────────────────────────────────────────
+    # Pick recommendation
     if len(ranked) == 1:
         ranked[0].is_recommended = True
         ranked[0].explanation = _explain_single(ranked[0], profile)
@@ -125,7 +125,7 @@ def rank_routes(
 
         best.is_recommended = True
 
-        # ── Calculate score reduction vs fastest ─────────────────────────────
+        # Score reduction vs fastest
         fastest_exposure = ranked[0].avg_exposure
         if best.route_index != 0:
             reduction = exposure_reduction_pct(fastest_exposure, best.avg_exposure)
@@ -133,7 +133,7 @@ def rank_routes(
             # Also store on fastest for display
             ranked[0].model_score_reduction_pct = None
 
-        # ── Generate explanations ─────────────────────────────────────────────
+        # Route trade-off explanations
         for r in ranked:
             r.explanation = _explain_route(r, ranked[0], best, profile)
 

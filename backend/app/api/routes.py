@@ -97,7 +97,7 @@ async def get_area():
     )
 
 
-# ── Known pilot landmarks for instant sub-millisecond matching ────────────────
+# Predefined Pune landmarks for instant autocomplete matching
 PUNE_LANDMARKS = [
     {
         "name": "Fergusson College (FC College)",
@@ -333,7 +333,7 @@ async def find_routes(request: RouteRequest):
     Scores are relative model proxies, not measured temperatures.
     Falls back to synthetic demo data if routing service is unavailable.
     """
-    # ── Parse departure time ──────────────────────────────────────────────────
+    # Parse departure time
     try:
         departure_dt = datetime.fromisoformat(request.departure_time)
         if departure_dt.tzinfo is None:
@@ -351,7 +351,7 @@ async def find_routes(request: RouteRequest):
 
     departure_utc_str = departure_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    # ── Fetch weather ─────────────────────────────────────────────────────────
+    # Fetch weather
     weather = None
     weather_info: Optional[WeatherInfo] = None
     try:
@@ -374,7 +374,7 @@ async def find_routes(request: RouteRequest):
         # Weather unavailable — proceed without it; scores will reflect this
         pass
 
-    # ── Solar at origin ───────────────────────────────────────────────────────
+    # Solar position at departure
     solar_info: Optional[SolarInfo] = None
     try:
         solar = SolarCalculator.calculate(
@@ -390,7 +390,7 @@ async def find_routes(request: RouteRequest):
     except Exception:
         pass
 
-    # ── Fetch routes ──────────────────────────────────────────────────────────
+    # Fetch routes from Valhalla
     data_source = "live"
     try:
         candidate_routes = await get_pedestrian_routes(
@@ -416,7 +416,7 @@ async def find_routes(request: RouteRequest):
             detail="No routes found between the specified origin and destination.",
         )
 
-    # ── Score each route ──────────────────────────────────────────────────────
+    # Score route segments
     fastest = candidate_routes[0]
     all_metrics = []
     all_missing = []
@@ -447,7 +447,7 @@ async def find_routes(request: RouteRequest):
         )
         all_missing.append(missing)
 
-    # ── Rank routes ───────────────────────────────────────────────────────────
+    # Rank routes based on selected profile
     geometries = [r.geometry for r in candidate_routes]
     ranked = rank_routes(
         all_metrics,
@@ -457,7 +457,7 @@ async def find_routes(request: RouteRequest):
         data_source=data_source,
     )
 
-    # ── Build response ────────────────────────────────────────────────────────
+    # Format response
     route_results = []
     for r in ranked:
         route_results.append(
@@ -484,7 +484,7 @@ async def find_routes(request: RouteRequest):
             )
         )
 
-    # ── Log telemetry to AWS CloudWatch ───────────────────────────────────────
+    # Optional AWS CloudWatch telemetry
     recommended_route = next((r for r in route_results if r.is_recommended), None)
     log_route_query_to_cloudwatch(
         origin=(request.origin.lat, request.origin.lon),

@@ -36,7 +36,7 @@ from app.scoring.model import (
 from app.solar.calculator import SolarCalculator
 
 
-# ── normalize_uv ──────────────────────────────────────────────────────────────
+# normalize_uv
 
 def test_normalize_uv_zero():
     assert normalize_uv(0.0) == 0.0
@@ -61,7 +61,7 @@ def test_normalize_uv_negative():
     assert normalize_uv(-1.0) == 0.0
 
 
-# ── normalize_weather ─────────────────────────────────────────────────────────
+# normalize_weather
 
 def test_normalize_weather_all_none():
     result = normalize_weather(None, None, None)
@@ -91,7 +91,7 @@ def test_normalize_weather_full_cloud():
     assert result_clear > result_cloudy
 
 
-# ── score_segment ─────────────────────────────────────────────────────────────
+# score_segment
 
 def _make_features(**kwargs) -> SegmentFeatures:
     defaults = dict(
@@ -188,7 +188,7 @@ def test_score_reproducible():
     assert r1.confidence == r2.confidence
 
 
-# ── aggregate_route_scores ────────────────────────────────────────────────────
+# aggregate_route_scores
 
 def test_aggregate_empty():
     result = aggregate_route_scores([], [], "balanced")
@@ -242,7 +242,7 @@ def test_confidence_labels():
     assert result.confidence in ("high", "medium", "low")
 
 
-# ── exposure_reduction_pct ────────────────────────────────────────────────────
+# exposure_reduction_pct
 
 def test_reduction_zero_baseline():
     """Zero baseline → None (cannot compute)."""
@@ -265,7 +265,7 @@ def test_reduction_recommended_worse():
     assert result < 0.0
 
 
-# ── SolarCalculator ───────────────────────────────────────────────────────────
+# SolarCalculator
 
 def test_solar_noon_high_elevation():
     """At solar noon in Pune in October, elevation should be significant."""
@@ -303,7 +303,7 @@ def test_solar_irradiance_between_zero_and_one():
         assert 0.0 <= result.irradiance_proxy <= 1.0
 
 
-# ── Hand-calculated example (documented in MODEL.md) ─────────────────────────
+# Hand-calculated example (documented in MODEL.md)
 
 def test_hand_calculated_example():
     """

@@ -33,14 +33,14 @@ def build_segment_features(
 
     Missing features are represented as None, never silently zeroed.
     """
-    # ── Midpoint of segment ───────────────────────────────────────────────────
+    # Segment midpoint
     mid_lat = (segment.start_lat + segment.end_lat) / 2
     mid_lon = (segment.start_lon + segment.end_lon) / 2
 
     features_available: list[str] = []
     features_missing: list[str] = []
 
-    # ── Solar position ────────────────────────────────────────────────────────
+    # Solar position
     solar_elevation_deg: Optional[float] = None
     sun_factor: Optional[float] = None
     try:
@@ -51,7 +51,7 @@ def build_segment_features(
     except Exception:
         features_missing.append("solar_elevation")
 
-    # ── Weather ───────────────────────────────────────────────────────────────
+    # Weather data
     uv_index: Optional[float] = None
     uv_factor: Optional[float] = None
     temperature_c: Optional[float] = None

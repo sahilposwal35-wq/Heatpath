@@ -1,28 +1,8 @@
-"""
-Exposure scoring model for HeatPath.
-
-Formula (documented in docs/MODEL.md):
-
-  segment_exposure = clamp(w_sun * sun_factor + w_uv * uv_factor + w_weather * weather_factor, 0, 1)
-
-  route_score = alpha * normalized_time + beta * weighted_avg_exposure + gamma * normalized_distance
-
-All weights are engineering prototype assumptions, not validated scientific constants.
-Score represents a *relative proxy* for estimated heat exposure — not actual temperature
-or physiological heat stress.
-
-Missing features are handled explicitly:
-- If a feature is unavailable, its weight is redistributed proportionally.
-- The score is always accompanied by a confidence/data-coverage indicator.
-- A missing feature is NEVER silently substituted with zero.
-"""
+"""Exposure scoring and route ranking model."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Optional
-
-
-# ── Feature availability flags ────────────────────────────────────────────────
 
 @dataclass
 class SegmentFeatures:
@@ -81,9 +61,7 @@ class RouteMetrics:
     route_cost: float  # 0–1
     confidence: str  # "high" | "medium" | "low"
     score_components: dict[str, float]
-
-
-# ── Model weights (documented prototype assumptions) ─────────────────────────
+# Segment and profile weights
 
 # Per-segment exposure weights — must sum to 1.0
 SEGMENT_WEIGHTS = {
@@ -162,28 +140,25 @@ def score_segment(features: SegmentFeatures) -> SegmentScore:
     available_weights: dict[str, float] = {}
     missing: list[str] = []
 
-    # ── Sun factor ───────────────────────────────────────────────────
     if features.sun_factor is not None:
         available_weights["sun"] = SEGMENT_WEIGHTS["sun"]
         components["sun"] = features.sun_factor
     else:
         missing.append("solar_position")
 
-    # ── UV factor ────────────────────────────────────────────────────
     if features.uv_factor is not None:
         available_weights["uv"] = SEGMENT_WEIGHTS["uv"]
         components["uv"] = features.uv_factor
     else:
         missing.append("uv_index")
 
-    # ── Weather factor ───────────────────────────────────────────────
     if features.weather_factor is not None:
         available_weights["weather"] = SEGMENT_WEIGHTS["weather"]
         components["weather"] = features.weather_factor
     else:
         missing.append("weather")
 
-    # ── Handle all-missing case ──────────────────────────────────────
+    # If all missing, fallback to neutral score with zero confidence
     total_available_w = sum(available_weights.values())
     if total_available_w == 0:
         return SegmentScore(
@@ -270,7 +245,7 @@ def aggregate_route_scores(
     )
     data_coverage = covered_duration / total_duration
 
-    # ── Route objective cost ─────────────────────────────────────────
+    # Route objective cost
     w = PROFILE_WEIGHTS.get(profile, PROFILE_WEIGHTS["balanced"])
     alpha = w["alpha"]
     beta = w["beta"]

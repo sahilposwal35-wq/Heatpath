@@ -88,7 +88,7 @@ async def get_current_weather(
     now_utc = datetime.now(timezone.utc)
     retrieved_at = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    # ── Try to get the value nearest to target_utc from hourly data ──────────
+    # Try to match hourly forecast nearest to target departure time
     if target_utc is not None:
         hourly = data.get("hourly", {})
         times = hourly.get("time", [])
@@ -109,7 +109,7 @@ async def get_current_weather(
                     is_live=True,
                 )
 
-    # ── Fall back to current conditions ──────────────────────────────────────
+    # Fall back to current conditions
     current = data.get("current", {})
     return WeatherConditions(
         temperature_c=current.get("temperature_2m"),

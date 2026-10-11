@@ -5,7 +5,7 @@ import PlaceSearchInput from './components/PlaceSearchInput';
 import { RouteCard, WeatherStrip } from './components/RouteCard';
 import { api, type RouteResponse } from './services/api';
 
-// ── Example locations ─────────────────────────────────────────────────────────
+// Quick demo presets
 
 const QUICK_LOCATIONS = [
   { name: 'Shivajinagar → Deccan', origin: { lat: 18.5204, lon: 73.8399 }, dest: { lat: 18.5074, lon: 73.8479 } },
@@ -49,7 +49,7 @@ export default function App() {
   const [response, setResponse] = useState<RouteResponse | null>(null);
   const [selectedRouteIdx, setSelectedRouteIdx] = useState<number | null>(null);
 
-  // ── Map click handlers ──────────────────────────────────────────────────────
+  // Map click handlers
   const handleOriginSet = useCallback((lat: number, lon: number) => {
     setOrigin({ lat, lon });
     setOriginName(`Map Pin (${lat.toFixed(4)}, ${lon.toFixed(4)})`);
@@ -64,7 +64,7 @@ export default function App() {
     setResponse(null);
   }, []);
 
-  // ── Quick location ──────────────────────────────────────────────────────────
+  // Preset selection
   const applyQuick = (q: typeof QUICK_LOCATIONS[0]) => {
     setOrigin(q.origin);
     setDestination(q.dest);
@@ -75,7 +75,7 @@ export default function App() {
     setClickMode(null);
   };
 
-  // ── Find routes ─────────────────────────────────────────────────────────────
+  // Route search
   const findRoutes = async () => {
     if (!origin || !destination) return;
     setLoading(true);
@@ -106,7 +106,7 @@ export default function App() {
 
   return (
     <div className="app-layout">
-      {/* ── Sidebar ────────────────────────────────────────────────────────── */}
+      {/* Sidebar */}
       <aside className="sidebar">
         {/* Header */}
         <div className="sidebar-header">
@@ -122,7 +122,7 @@ export default function App() {
         {/* Body */}
         <div className="sidebar-body">
 
-          {/* ── Quick locations ─────────────────────────────────────────────── */}
+          {/* Quick presets */}
           <div className="form-section">
             <p className="form-section-title">Quick locations (Pune)</p>
             <div className="quick-locations">
@@ -141,7 +141,7 @@ export default function App() {
 
           <div className="divider" />
 
-          {/* ── Origin ─────────────────────────────────────────────────────── */}
+          {/* Origin & destination */}
           <div className="form-section">
             <p className="form-section-title">Route</p>
 
@@ -185,7 +185,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* ── Departure time ──────────────────────────────────────────────── */}
+          {/* Departure time */}
           <div className="input-group">
             <label className="input-label" htmlFor="departure-time">
               <span className="icon">🕐</span> Departure time (IST)
@@ -199,7 +199,7 @@ export default function App() {
             />
           </div>
 
-          {/* ── Profile ────────────────────────────────────────────────────── */}
+          {/* Profile selection */}
           <div className="input-group">
             <label className="input-label">
               <span className="icon">🎛️</span> Preference
@@ -220,7 +220,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* ── Find button ─────────────────────────────────────────────────── */}
+          {/* Submit button */}
           <button
             id="find-routes-btn"
             className="find-btn"
@@ -237,14 +237,14 @@ export default function App() {
             )}
           </button>
 
-          {/* ── Error ──────────────────────────────────────────────────────── */}
+          {/* Error display */}
           {error && (
             <div className="info-panel error fade-in" role="alert">
               ⚠ {error}
             </div>
           )}
 
-          {/* ── Results ────────────────────────────────────────────────────── */}
+          {/* Route results */}
           {response && (
             <div className="results-section fade-in">
               <div className="results-header">
@@ -285,7 +285,7 @@ export default function App() {
             </div>
           )}
 
-          {/* ── Placeholder when no results ────────────────────────────────── */}
+          {/* Empty state */}
           {!response && !loading && !error && (
             <div className="info-panel fade-in" style={{ textAlign: 'center', padding: 20 }}>
               <div style={{ fontSize: 28, marginBottom: 8 }}>🗺️</div>
@@ -307,7 +307,7 @@ export default function App() {
         </div>
       </aside>
 
-      {/* ── Map ──────────────────────────────────────────────────────────────── */}
+      {/* Leaflet map */}
       <HeatMap
         origin={origin}
         destination={destination}

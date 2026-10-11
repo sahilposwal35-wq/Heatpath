@@ -1,6 +1,5 @@
 import type { RouteResult, WeatherInfo, SolarInfo } from '../services/api';
 
-// ── Utility ───────────────────────────────────────────────────────────────────
 
 function exposureClass(score: number): string {
   if (score < 0.35) return 'exposure-low';
@@ -26,7 +25,6 @@ function formatDuration(seconds: number): string {
   return `${Math.floor(m / 60)}h ${m % 60}`;
 }
 
-// ── RouteCard ─────────────────────────────────────────────────────────────────
 
 interface RouteCardProps {
   route: RouteResult;
@@ -136,7 +134,6 @@ export function RouteCard({ route, isSelected, onClick }: RouteCardProps) {
   );
 }
 
-// ── WeatherStrip ──────────────────────────────────────────────────────────────
 
 interface WeatherStripProps {
   weather: WeatherInfo;
