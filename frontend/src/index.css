@@ -683,9 +683,9 @@ body {
   background: #0d1117;
 }
 
-/* Leaflet dark mode overrides */
+/* Leaflet dark mode overrides for OpenStreetMap tiles */
 .leaflet-tile {
-  filter: brightness(0.7) saturate(0.8);
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
 }
 
 /* ── Map legend ────────────────────────────────────────────────── */

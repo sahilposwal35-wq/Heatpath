@@ -90,10 +90,10 @@ export default function HeatMap({
         style={{ height: '100%', width: '100%' }}
         zoomControl={true}
       >
-        {/* Dark map tiles */}
+        {/* OpenStreetMap tiles — 100% free, zero watermarks, no API key required */}
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           maxZoom={19}
         />
 
