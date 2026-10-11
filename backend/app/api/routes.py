@@ -25,6 +25,7 @@ from app.data_sources.weather import get_current_weather, WeatherError
 from app.solar.calculator import SolarCalculator
 from app.geospatial.features import build_segment_features
 from app.scoring.model import score_segment, aggregate_route_scores
+from app.aws.cloudwatch import log_route_query_to_cloudwatch
 
 router = APIRouter()
 
@@ -308,6 +309,21 @@ async def find_routes(request: RouteRequest):
                 missing_features=r.missing_features,
             )
         )
+
+    # ── Log telemetry to AWS CloudWatch ───────────────────────────────────────
+    recommended_route = next((r for r in route_results if r.is_recommended), None)
+    log_route_query_to_cloudwatch(
+        origin=(request.origin.lat, request.origin.lon),
+        destination=(request.destination.lat, request.destination.lon),
+        profile=request.profile,
+        num_routes=len(route_results),
+        best_route_label=recommended_route.label if recommended_route else "N/A",
+        time_saved_or_score_diff={
+            "extra_minutes_vs_fastest": recommended_route.extra_minutes_vs_fastest if recommended_route else 0.0,
+            "model_score_reduction_pct": recommended_route.model_score_reduction_pct if recommended_route else 0.0,
+            "avg_exposure_score": recommended_route.avg_exposure_score if recommended_route else 0.0,
+        },
+    )
 
     return RouteResponse(
         routes=route_results,

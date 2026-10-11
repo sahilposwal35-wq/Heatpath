@@ -56,5 +56,10 @@ class Settings:
     version: str = "1.0.0"
     app_name: str = "HeatPath"
 
+    # AWS configuration
+    aws_region: str = os.getenv("AWS_REGION", "ap-south-1")
+    aws_s3_bucket_name: str | None = os.getenv("AWS_S3_BUCKET_NAME")
+    aws_cloudwatch_log_group: str | None = os.getenv("AWS_CLOUDWATCH_LOG_GROUP")
+
 
 settings = Settings()
