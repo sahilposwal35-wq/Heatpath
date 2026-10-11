@@ -75,3 +75,23 @@ def test_routes_identical_origin_destination():
     }
     response = client.post("/api/routes", json=payload)
     assert response.status_code == 422
+
+
+def test_geocode_endpoint():
+    response = client.get("/api/geocode?q=Fergusson")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    first = data[0]
+    assert "name" in first
+    assert "display_name" in first
+    assert "lat" in first
+    assert "lon" in first
+    assert 18.0 <= first["lat"] <= 19.0
+    assert 73.0 <= first["lon"] <= 74.5
+
+
+def test_geocode_short_query_fails():
+    response = client.get("/api/geocode?q=a")
+    assert response.status_code == 422

@@ -8,6 +8,7 @@ import os
 from datetime import datetime, timezone
 from typing import Optional
 
+import httpx
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 
@@ -18,6 +19,7 @@ from app.config import settings
 from app.schemas.routes import (
     RouteRequest, RouteResponse, RouteResult, WeatherInfo, SolarInfo,
     HealthResponse, DataStatusResponse, AreaResponse, ScoreComponents,
+    GeocodeResult,
 )
 from app.routing.valhalla import get_pedestrian_routes, ValhallaRoutingError
 from app.routing.ranker import rank_routes
@@ -93,6 +95,178 @@ async def get_area():
             "Route alternatives depend on Valhalla's algorithm — not all pairs return multiple alternatives",
         ],
     )
+
+
+# ── Known pilot landmarks for instant sub-millisecond matching ────────────────
+PUNE_LANDMARKS = [
+    {
+        "name": "Fergusson College (FC College)",
+        "display_name": "Fergusson College, FC Road, Shivajinagar, Pune",
+        "lat": 18.5241,
+        "lon": 73.8386,
+    },
+    {
+        "name": "Deccan Gymkhana",
+        "display_name": "Deccan Gymkhana, Karve Road / FC Road, Pune",
+        "lat": 18.5159,
+        "lon": 73.8412,
+    },
+    {
+        "name": "Shivajinagar Station",
+        "display_name": "Shivajinagar Railway Station, Pune",
+        "lat": 18.5314,
+        "lon": 73.8522,
+    },
+    {
+        "name": "FC Road (Fergusson College Road)",
+        "display_name": "Gopal Krushna Gokhale Path (FC Road), Deccan, Pune",
+        "lat": 18.5221,
+        "lon": 73.8412,
+    },
+    {
+        "name": "JM Road (Jangali Maharaj Road)",
+        "display_name": "Jangali Maharaj Road, Shivajinagar, Pune",
+        "lat": 18.5248,
+        "lon": 73.8496,
+    },
+    {
+        "name": "Shaniwar Wada",
+        "display_name": "Shaniwar Wada, Bajirao Road, Kasba Peth, Pune",
+        "lat": 18.5194,
+        "lon": 73.8554,
+    },
+    {
+        "name": "Nal Stop",
+        "display_name": "Nal Stop, Karve Road, Erandwane, Pune",
+        "lat": 18.5060,
+        "lon": 73.8310,
+    },
+    {
+        "name": "Pune Railway Station",
+        "display_name": "Pune Junction Railway Station, Agarkar Nagar, Pune",
+        "lat": 18.5289,
+        "lon": 73.8744,
+    },
+    {
+        "name": "Sambhaji Park",
+        "display_name": "Chhatrapati Sambhaji Udyan, JM Road, Pune",
+        "lat": 18.5196,
+        "lon": 73.8488,
+    },
+    {
+        "name": "Goodluck Cafe",
+        "display_name": "Cafe Goodluck, FC Road, Deccan Gymkhana, Pune",
+        "lat": 18.5168,
+        "lon": 73.8417,
+    },
+    {
+        "name": "Modern College",
+        "display_name": "Modern College of Arts Science & Commerce, Shivajinagar, Pune",
+        "lat": 18.5283,
+        "lon": 73.8482,
+    },
+    {
+        "name": "COEP Technological University",
+        "display_name": "College of Engineering Pune (COEP), Shivajinagar, Pune",
+        "lat": 18.5298,
+        "lon": 73.8566,
+    },
+]
+
+
+@router.get("/api/geocode", response_model=list[GeocodeResult], tags=["Geocoding"])
+async def search_places(q: str = Query(..., min_length=2, description="Place search query")):
+    """
+    Search for places/addresses in Pune using instant local cache + Nominatim / Photon fallback.
+    """
+    query = q.strip()
+    if not query:
+        return []
+
+    results: list[dict] = []
+    seen_coords = set()
+
+    # 1. Check local Pune landmarks first for instantaneous match
+    q_lower = query.lower()
+    for landmark in PUNE_LANDMARKS:
+        if q_lower in landmark["name"].lower() or q_lower in landmark["display_name"].lower():
+            key = (round(landmark["lat"], 4), round(landmark["lon"], 4))
+            if key not in seen_coords:
+                seen_coords.add(key)
+                results.append(landmark)
+
+    # 2. Query Nominatim with Pune viewbox bias
+    nominatim_url = f"{settings.nominatim_base_url}/search"
+    search_q = query if "pune" in q_lower else f"{query}, Pune"
+    params = {
+        "q": search_q,
+        "format": "json",
+        "limit": 6,
+        "viewbox": f"{settings.pilot_lon_min - 0.05},{settings.pilot_lat_max + 0.05},{settings.pilot_lon_max + 0.05},{settings.pilot_lat_min - 0.05}",
+        "bounded": 0,
+        "email": settings.nominatim_email,
+    }
+    headers = {
+        "User-Agent": settings.nominatim_user_agent,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            resp = await client.get(nominatim_url, params=params, headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                for item in data:
+                    lat = float(item["lat"])
+                    lon = float(item["lon"])
+                    key = (round(lat, 4), round(lon, 4))
+                    if key not in seen_coords:
+                        seen_coords.add(key)
+                        name = item.get("name") or item.get("display_name", "").split(",")[0]
+                        results.append({
+                            "name": name.strip(),
+                            "display_name": item.get("display_name", name).strip(),
+                            "lat": lat,
+                            "lon": lon,
+                        })
+    except Exception:
+        pass
+
+    # 3. Fallback to Photon by Komoot if Nominatim returned very few results
+    if len(results) < 3:
+        try:
+            photon_url = "https://photon.komoot.io/api/"
+            photon_params = {
+                "q": query,
+                "lat": settings.pilot_center_lat,
+                "lon": settings.pilot_center_lon,
+                "limit": 5,
+            }
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                resp = await client.get(photon_url, params=photon_params)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    for feat in data.get("features", []):
+                        coords = feat.get("geometry", {}).get("coordinates", [])
+                        if len(coords) >= 2:
+                            lon, lat = coords[0], coords[1]
+                            key = (round(lat, 4), round(lon, 4))
+                            if key not in seen_coords:
+                                seen_coords.add(key)
+                                props = feat.get("properties", {})
+                                name = props.get("name", query)
+                                disp = ", ".join(
+                                    filter(None, [props.get("name"), props.get("street"), props.get("city"), props.get("state")])
+                                )
+                                results.append({
+                                    "name": name.strip(),
+                                    "display_name": (disp or name).strip(),
+                                    "lat": lat,
+                                    "lon": lon,
+                                })
+        except Exception:
+            pass
+
+    return [GeocodeResult(**r) for r in results[:8]]
 
 
 @router.get("/api/data-status", response_model=DataStatusResponse, tags=["Info"])

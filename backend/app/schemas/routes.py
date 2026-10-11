@@ -195,3 +195,10 @@ class AreaResponse(BaseModel):
     example_pairs: list[dict[str, Any]]
     data_sources: list[str]
     limitations: list[str]
+
+
+class GeocodeResult(BaseModel):
+    name: str
+    display_name: str
+    lat: float
+    lon: float

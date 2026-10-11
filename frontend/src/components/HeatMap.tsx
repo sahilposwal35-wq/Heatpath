@@ -1,4 +1,5 @@
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents } from 'react-leaflet';
+import { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { RouteResult } from '../services/api';
@@ -52,6 +53,44 @@ function MapClickHandler({
   return null;
 }
 
+function MapViewController({
+  origin,
+  destination,
+  routes,
+}: {
+  origin: { lat: number; lon: number } | null;
+  destination: { lat: number; lon: number } | null;
+  routes: RouteResult[];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (routes.length > 0) {
+      const allCoords: [number, number][] = [];
+      routes.forEach(r => {
+        r.geometry.forEach(([lon, lat]) => allCoords.push([lat, lon]));
+      });
+      if (allCoords.length > 0) {
+        map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40], maxZoom: 16 });
+      }
+    } else if (origin && destination) {
+      map.fitBounds(
+        L.latLngBounds([
+          [origin.lat, origin.lon],
+          [destination.lat, destination.lon],
+        ]),
+        { padding: [50, 50], maxZoom: 16 }
+      );
+    } else if (origin) {
+      map.flyTo([origin.lat, origin.lon], 15, { duration: 0.8 });
+    } else if (destination) {
+      map.flyTo([destination.lat, destination.lon], 15, { duration: 0.8 });
+    }
+  }, [origin, destination, routes, map]);
+
+  return null;
+}
+
 const ROUTE_COLORS: Record<string, string> = {
   'Fastest': '#38bdf8',
   'Heat-aware': '#fb923c',
@@ -102,6 +141,12 @@ export default function HeatMap({
           isSettingDest={isSettingDest}
           onOriginSet={onOriginSet}
           onDestSet={onDestSet}
+        />
+
+        <MapViewController
+          origin={origin}
+          destination={destination}
+          routes={routes}
         />
 
         {/* Route polylines */}

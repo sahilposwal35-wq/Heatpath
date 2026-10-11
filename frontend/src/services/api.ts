@@ -76,6 +76,13 @@ export interface HealthResponse {
   app_name: string;
 }
 
+export interface GeocodeResult {
+  name: string;
+  display_name: string;
+  lat: number;
+  lon: number;
+}
+
 const BACKEND = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
@@ -101,4 +108,6 @@ export const api = {
 
   getArea: () => apiFetch('/api/area'),
   getDataStatus: () => apiFetch('/api/data-status'),
+  searchPlaces: (q: string) =>
+    apiFetch<GeocodeResult[]>(`/api/geocode?q=${encodeURIComponent(q)}`),
 };

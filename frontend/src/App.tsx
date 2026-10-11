@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import './index.css';
 import HeatMap from './components/HeatMap';
+import PlaceSearchInput from './components/PlaceSearchInput';
 import { RouteCard, WeatherStrip } from './components/RouteCard';
 import { api, type RouteResponse } from './services/api';
 
@@ -37,6 +38,8 @@ function toISOWithIST(localStr: string): string {
 export default function App() {
   const [origin, setOrigin] = useState<{ lat: number; lon: number } | null>(null);
   const [destination, setDestination] = useState<{ lat: number; lon: number } | null>(null);
+  const [originName, setOriginName] = useState<string>('');
+  const [destName, setDestName] = useState<string>('');
   const [departureTime, setDepartureTime] = useState(defaultDepartureTime());
   const [profile, setProfile] = useState<Profile>('balanced');
   const [clickMode, setClickMode] = useState<ClickMode>(null);
@@ -49,12 +52,14 @@ export default function App() {
   // ── Map click handlers ──────────────────────────────────────────────────────
   const handleOriginSet = useCallback((lat: number, lon: number) => {
     setOrigin({ lat, lon });
+    setOriginName(`Map Pin (${lat.toFixed(4)}, ${lon.toFixed(4)})`);
     setClickMode(null);
     setResponse(null);
   }, []);
 
   const handleDestSet = useCallback((lat: number, lon: number) => {
     setDestination({ lat, lon });
+    setDestName(`Map Pin (${lat.toFixed(4)}, ${lon.toFixed(4)})`);
     setClickMode(null);
     setResponse(null);
   }, []);
@@ -63,6 +68,9 @@ export default function App() {
   const applyQuick = (q: typeof QUICK_LOCATIONS[0]) => {
     setOrigin(q.origin);
     setDestination(q.dest);
+    const parts = q.name.split(' → ');
+    setOriginName(parts[0] || q.name);
+    setDestName(parts[1] || '');
     setResponse(null);
     setClickMode(null);
   };
@@ -137,43 +145,39 @@ export default function App() {
           <div className="form-section">
             <p className="form-section-title">Route</p>
 
-            <div className="input-group">
-              <label className="input-label">
-                <span className="icon">🟢</span> Origin
-              </label>
-              <div
-                className={`coord-display ${origin ? 'set' : 'empty'} ${isSettingOrigin ? 'active' : ''}`}
-                onClick={() => setClickMode(isSettingOrigin ? null : 'origin')}
-                id="origin-input"
-                role="button"
-                tabIndex={0}
-                aria-label="Set origin by clicking on map"
-              >
-                {origin
-                  ? `${origin.lat.toFixed(5)}, ${origin.lon.toFixed(5)}`
-                  : 'Click to set, then tap map ↗'
-                }
-              </div>
-            </div>
+            <PlaceSearchInput
+              id="origin-search"
+              label="Origin"
+              icon="🟢"
+              value={origin}
+              placeName={originName}
+              onChange={(coords, name) => {
+                setOrigin(coords);
+                setOriginName(name || '');
+                setClickMode(null);
+                setResponse(null);
+              }}
+              isMapSelecting={isSettingOrigin}
+              onToggleMapSelect={() => setClickMode(isSettingOrigin ? null : 'origin')}
+              placeholder="Search place (e.g. FC College, Station, Deccan)..."
+            />
 
-            <div className="input-group">
-              <label className="input-label">
-                <span className="icon">🟠</span> Destination
-              </label>
-              <div
-                className={`coord-display ${destination ? 'set' : 'empty'} ${isSettingDest ? 'active' : ''}`}
-                onClick={() => setClickMode(isSettingDest ? null : 'dest')}
-                id="dest-input"
-                role="button"
-                tabIndex={0}
-                aria-label="Set destination by clicking on map"
-              >
-                {destination
-                  ? `${destination.lat.toFixed(5)}, ${destination.lon.toFixed(5)}`
-                  : 'Click to set, then tap map ↗'
-                }
-              </div>
-            </div>
+            <PlaceSearchInput
+              id="dest-search"
+              label="Destination"
+              icon="🟠"
+              value={destination}
+              placeName={destName}
+              onChange={(coords, name) => {
+                setDestination(coords);
+                setDestName(name || '');
+                setClickMode(null);
+                setResponse(null);
+              }}
+              isMapSelecting={isSettingDest}
+              onToggleMapSelect={() => setClickMode(isSettingDest ? null : 'dest')}
+              placeholder="Search destination (e.g. Nal Stop, Shaniwar Wada)..."
+            />
 
             {/* Map instruction */}
             <div className={`map-instruction ${!clickMode ? 'hidden' : ''}`}>

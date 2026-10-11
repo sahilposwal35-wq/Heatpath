@@ -27,8 +27,9 @@ class Settings:
     )
     nominatim_user_agent: str = os.getenv(
         "NOMINATIM_USER_AGENT",
-        "HeatPath/1.0 (WeMakeDevs hackathon; contact: heatpath@example.com)",
+        "HeatPath-Pedestrian-App/1.0 (WeMakeDevs hackathon; contact: sahilposwal35@gmail.com)",
     )
+    nominatim_email: str = os.getenv("NOMINATIM_EMAIL", "sahilposwal35@gmail.com")
 
     # Backend
     backend_host: str = os.getenv("BACKEND_HOST", "0.0.0.0")
