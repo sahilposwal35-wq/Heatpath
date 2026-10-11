@@ -83,7 +83,7 @@ export interface GeocodeResult {
   lon: number;
 }
 
-const BACKEND = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const BACKEND = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://localhost:8000' : '');
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BACKEND}${path}`, {
